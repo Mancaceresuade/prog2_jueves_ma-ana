@@ -339,13 +339,18 @@ public class GrafoGame {
     }
 
     static String etiquetaPregunta(Pregunta p) {
-        return switch (p.tipo) {
-            case "BFS_CAMINO" -> "#" + p.id + " · BFS camino: " + CIUDADES[p.origen] + " → " + CIUDADES[p.destino];
-            case "BFS_ORDEN"  -> "#" + p.id + " · BFS orden desde " + CIUDADES[p.origen];
-            case "DFS_ORDEN"  -> "#" + p.id + " · DFS orden desde " + CIUDADES[p.origen];
-            case "MATRIZ_QUERY" -> "#" + p.id + " · Matriz: " + CIUDADES[p.origen] + " ↔ " + CIUDADES[p.destino];
-            default -> "#" + p.id + " · " + p.tipo;
-        };
+        switch (p.tipo) {
+            case "BFS_CAMINO":
+                return "#" + p.id + " · BFS camino: " + CIUDADES[p.origen] + " → " + CIUDADES[p.destino];
+            case "BFS_ORDEN":
+                return "#" + p.id + " · BFS orden desde " + CIUDADES[p.origen];
+            case "DFS_ORDEN":
+                return "#" + p.id + " · DFS orden desde " + CIUDADES[p.origen];
+            case "MATRIZ_QUERY":
+                return "#" + p.id + " · Matriz: " + CIUDADES[p.origen] + " ↔ " + CIUDADES[p.destino];
+            default:
+                return "#" + p.id + " · " + p.tipo;
+        }
     }
 
     static synchronized void apiUnirse(HttpExchange ex) throws IOException {
@@ -531,32 +536,43 @@ public class GrafoGame {
         List<Integer> respuesta;
         String enunciado;
         switch (tipo) {
-            case "BFS_CAMINO" -> {
+            case "BFS_CAMINO":
                 respuesta = grafo.bfsCamino(origen, destino);
                 enunciado = "🗺️ BFS: ¿Cuál es el camino más corto de "
                         + CIUDADES[origen] + " a " + CIUDADES[destino] + "?\n"
                         + "Ingresá los nodos en orden separados por coma (ej: 0,2,3)";
-            }
-            case "BFS_ORDEN" -> {
+                break;
+            case "BFS_ORDEN":
                 respuesta = grafo.bfs(origen);
                 enunciado = "🔍 BFS: ¿En qué orden visita BFS todos los nodos partiendo de "
                         + CIUDADES[origen] + " (nodo " + origen + ")?\n"
                         + "Ingresá el orden completo de visita";
-            }
-            case "DFS_ORDEN" -> {
+                break;
+            case "DFS_ORDEN":
                 respuesta = grafo.dfs(origen);
                 enunciado = "🌀 DFS: ¿En qué orden visita DFS todos los nodos partiendo de "
                         + CIUDADES[origen] + " (nodo " + origen + ")?\n"
                         + "Ingresá el orden completo de visita";
-            }
-            case "MATRIZ_QUERY" -> {
+                break;
+            case "MATRIZ_QUERY": {
                 int peso = grafo.mat[origen][destino];
-                respuesta = peso > 0 ? List.of(1, peso) : List.of(0);
+                if (peso > 0) {
+                    respuesta = new ArrayList<>();
+                    respuesta.add(1);
+                    respuesta.add(peso);
+                } else {
+                    respuesta = new ArrayList<>();
+                    respuesta.add(0);
+                }
                 enunciado = "📊 MATRIZ: ¿Están conectados " + CIUDADES[origen]
                         + " y " + CIUDADES[destino] + "? Si sí, ¿cuál es el peso?\n"
                         + "Respondé: '1,peso' si están conectados, '0' si no";
+                break;
             }
-            default -> { respuesta = new ArrayList<>(); enunciado = "Pregunta desconocida"; }
+            default:
+                respuesta = new ArrayList<>();
+                enunciado = "Pregunta desconocida";
+                break;
         }
         preguntas.add(new Pregunta(nextPregId++, tipo, enunciado, origen, destino, respuesta));
     }
@@ -582,7 +598,7 @@ public class GrafoGame {
                 String[] p = line.split("\\|", -1);
                 if (p.length == 0) continue;
                 switch (p[0]) {
-                    case "JUG" -> {
+                    case "JUG":
                         if (p.length >= 5) {
                             Jugador j = new Jugador(p[1]);
                             j.puntaje     = Integer.parseInt(p[2]);
@@ -590,10 +606,12 @@ public class GrafoGame {
                             j.tiempoTotal = Integer.parseInt(p[4]);
                             jugadores.put(p[1], j);
                         }
-                    }
-                    case "PREGACTUAL" -> {
+                        break;
+                    case "PREGACTUAL":
                         if (p.length >= 2) preguntaActualId = Integer.parseInt(p[1]);
-                    }
+                        break;
+                    default:
+                        break;
                 }
             }
         } catch (IOException e) {

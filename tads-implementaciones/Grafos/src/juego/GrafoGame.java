@@ -322,8 +322,30 @@ public class GrafoGame {
             }
             sb.append("}");
         }
+        sb.append("],\"preguntas\":[");
+        for (int i = 0; i < preguntas.size(); i++) {
+            if (i > 0) sb.append(",");
+            Pregunta pr = preguntas.get(i);
+            sb.append("{\"id\":").append(pr.id);
+            sb.append(",\"tipo\":\"").append(pr.tipo).append("\"");
+            sb.append(",\"origen\":").append(pr.origen);
+            sb.append(",\"destino\":").append(pr.destino);
+            sb.append(",\"activa\":").append(pr.activa);
+            sb.append(",\"etiqueta\":\"").append(esc(etiquetaPregunta(pr))).append("\"");
+            sb.append("}");
+        }
         sb.append("],\"totalPreguntas\":").append(preguntas.size()).append("}");
         respondJson(ex, sb.toString());
+    }
+
+    static String etiquetaPregunta(Pregunta p) {
+        return switch (p.tipo) {
+            case "BFS_CAMINO" -> "#" + p.id + " · BFS camino: " + CIUDADES[p.origen] + " → " + CIUDADES[p.destino];
+            case "BFS_ORDEN"  -> "#" + p.id + " · BFS orden desde " + CIUDADES[p.origen];
+            case "DFS_ORDEN"  -> "#" + p.id + " · DFS orden desde " + CIUDADES[p.origen];
+            case "MATRIZ_QUERY" -> "#" + p.id + " · Matriz: " + CIUDADES[p.origen] + " ↔ " + CIUDADES[p.destino];
+            default -> "#" + p.id + " · " + p.tipo;
+        };
     }
 
     static synchronized void apiUnirse(HttpExchange ex) throws IOException {
@@ -675,12 +697,20 @@ public class GrafoGame {
   .card-header { background: #1c2128; border-bottom: 1px solid var(--border); font-weight: 600; }
 
   /* GRAFO SVG */
-  #grafoSvg { width: 100%; height: 480px; background: #0d1117; border-radius: 10px; border: 1px solid var(--border); }
-  .node circle { stroke-width: 2; cursor: pointer; transition: r 0.15s; }
-  .node circle:hover { r: 22; }
-  .node text { font-size: 10px; fill: #e6edf3; pointer-events: none; text-anchor: middle; dominant-baseline: central; font-weight: 600; }
-  .link { stroke: var(--border); stroke-width: 2; }
-  .link-label { font-size: 9px; fill: var(--muted); }
+  #grafoSvg, #grafoSvg2 { width: 100%; height: 480px; background: #0a1420; border-radius: 10px; border: 1px solid var(--border); }
+  .mapa-fondo { pointer-events: none; }
+  .mapa-pais { stroke: #3d5a80; stroke-width: 2; }
+  .mapa-can { fill: #1a3348; opacity: 0.95; }
+  .mapa-usa { fill: #1e3d63; opacity: 0.95; }
+  .mapa-mex { fill: #3d3520; opacity: 0.95; }
+  .mapa-label { fill: #5a7a9a; font-size: 22px; font-weight: 700; opacity: 0.55; font-family: 'Segoe UI', sans-serif; }
+  .panel-unirse-compact .card-body { padding: 0.75rem 1rem; }
+  .node circle { stroke-width: 2.5; cursor: grab; transition: r 0.15s; }
+  .node.dragging circle { cursor: grabbing; }
+  .node circle:hover { r: 28; }
+  .node text { font-size: 11px; fill: #e6edf3; pointer-events: none; text-anchor: middle; dominant-baseline: central; font-weight: 600; }
+  .link { stroke: #6e9ac7; stroke-width: 3.5; stroke-linecap: round; opacity: 0.85; }
+  .link-label { font-size: 11px; fill: #e6edf3; font-weight: 700; paint-order: stroke; stroke: #0d1117; stroke-width: 3px; }
 
   /* CAMINO ANIMADO */
   .link-highlight { stroke: var(--accent); stroke-width: 4; }
@@ -690,6 +720,17 @@ public class GrafoGame {
   .node-path { fill: var(--accent) !important; }
   .node-start { fill: var(--green) !important; }
   .node-end { fill: var(--red) !important; }
+
+  /* TOOLTIP SEDE */
+  #nodoTooltip {
+    position: fixed; z-index: 2000; display: none; max-width: 300px;
+    padding: 12px 14px; background: #1c2128; border: 1px solid var(--accent);
+    border-radius: 10px; box-shadow: 0 8px 24px rgba(0,0,0,.45);
+    pointer-events: none; font-size: .85rem; line-height: 1.45;
+  }
+  #nodoTooltip .tt-titulo { font-weight: 700; color: var(--accent); margin-bottom: 4px; }
+  #nodoTooltip .tt-estadio { color: #e6edf3; }
+  #nodoTooltip .tt-nota { color: var(--muted); font-size: .8rem; margin-top: 6px; }
 
   /* RANKING */
   .rank-row { background: var(--card); border: 1px solid var(--border); border-radius: 8px;
@@ -753,24 +794,10 @@ public class GrafoGame {
   <button class="btn btn-sm btn-outline-danger ms-2" onclick="openAdmin()">Admin</button>
 </nav>
 
-<div class="container-fluid p-3">
-
-  <!-- UNIRSE -->
-  <div id="panelUnirse" class="row justify-content-center mb-3">
-    <div class="col-md-5">
-      <div class="card p-4 text-center">
-        <h5>👤 Ingresá al juego</h5>
-        <p class="text-muted small">Escribí tu nombre para unirte al ranking en vivo</p>
-        <div class="input-group">
-          <input type="text" id="inputNombre" class="form-control" placeholder="Tu nombre..." maxlength="30" onkeydown="if(event.key==='Enter')unirse()">
-          <button class="btn btn-primary" onclick="unirse()">Unirse</button>
-        </div>
-      </div>
-    </div>
-  </div>
+<div class="container-fluid px-3 pt-2 pb-3">
 
   <!-- TABS PRINCIPAL -->
-  <ul class="nav nav-tabs mb-3" id="mainTabs">
+  <ul class="nav nav-tabs mb-2" id="mainTabs">
     <li class="nav-item"><a class="nav-link active" href="#" onclick="showTab('juego');return false">🎯 Juego</a></li>
     <li class="nav-item"><a class="nav-link" href="#" onclick="showTab('grafo');return false">🗺️ Grafo</a></li>
     <li class="nav-item"><a class="nav-link" href="#" onclick="showTab('matriz');return false">📊 Matriz</a></li>
@@ -779,36 +806,50 @@ public class GrafoGame {
 
   <!-- TAB JUEGO -->
   <div id="tabJuego">
-    <div class="row g-3">
-      <!-- Pregunta actual -->
-      <div class="col-md-7">
-        <div id="preguntaBox">
-          <div class="card p-4 text-center text-muted">
-            <div style="font-size:2rem">⏳</div>
-            <p>Esperando que el profe active una pregunta...</p>
-          </div>
-        </div>
-        <!-- Visualización BFS/DFS animada -->
-        <div class="card mt-3">
-          <div class="card-header d-flex align-items-center gap-2">
-            <span>🗺️ Grafo — hacé clic en los nodos para armar tu camino</span>
-            <button class="btn btn-sm btn-outline-secondary ms-auto" onclick="limpiarCamino()">Limpiar</button>
-            <button class="btn btn-sm btn-success" onclick="enviarRespuesta()" id="btnEnviar" disabled>Enviar respuesta</button>
+    <div class="row g-2 align-items-start">
+      <div class="col-lg-8 order-1">
+        <div class="card mb-2">
+          <div class="card-header d-flex align-items-center gap-2 py-2">
+            <span class="small">🌎 Mundial 2026 — EE.UU. · México · Canadá</span>
+            <span class="text-muted small d-none d-md-inline">Clic = camino · Arrastrá = mover sede</span>
           </div>
           <div class="card-body p-1">
             <svg id="grafoSvg"></svg>
-            <div class="px-3 pb-2">
+            <div class="px-3 pb-3">
               <div class="text-muted small">Camino seleccionado:</div>
               <div class="camino-preview" id="caminoPreview">— ninguno —</div>
+              <div id="avisoUnirse" class="alert alert-warning py-2 px-3 mt-2 mb-0 small" role="alert">
+                👤 Unite con tu nombre (panel derecho) para poder enviar tu respuesta.
+              </div>
+              <div class="d-flex flex-wrap gap-2 mt-2 align-items-center">
+                <button type="button" class="btn btn-sm btn-outline-warning" onclick="deshacerUltimoNodo()" id="btnDeshacer" disabled>↩ Quitar último nodo</button>
+                <button type="button" class="btn btn-sm btn-outline-secondary" onclick="limpiarCamino()">Limpiar todo</button>
+                <button type="button" class="btn btn-sm btn-success ms-auto" onclick="enviarRespuesta()" id="btnEnviar" disabled title="Unite al juego primero">Enviar respuesta</button>
+              </div>
             </div>
           </div>
         </div>
+        <div id="preguntaBox">
+          <div class="card p-3 text-center text-muted">
+            <div style="font-size:1.5rem">⏳</div>
+            <p class="mb-0 small">Esperando que el profe active una pregunta...</p>
+          </div>
+        </div>
       </div>
-      <!-- Ranking lateral -->
-      <div class="col-md-5">
+      <div class="col-lg-4 order-2">
+        <div id="panelUnirse" class="card panel-unirse-compact mb-2">
+          <div class="card-body">
+            <h6 class="mb-1">👤 Ingresá al juego</h6>
+            <p class="text-muted small mb-2">Tu nombre para el ranking en vivo</p>
+            <div class="input-group input-group-sm">
+              <input type="text" id="inputNombre" class="form-control" placeholder="Tu nombre..." maxlength="30" onkeydown="if(event.key==='Enter')unirse()">
+              <button class="btn btn-primary" onclick="unirse()">Unirse</button>
+            </div>
+          </div>
+        </div>
         <div class="card">
-          <div class="card-header">🏆 Ranking en vivo</div>
-          <div class="card-body p-2" id="rankingJuego" style="max-height:600px;overflow-y:auto"></div>
+          <div class="card-header py-2">🏆 Ranking en vivo</div>
+          <div class="card-body p-2" id="rankingJuego" style="max-height:520px;overflow-y:auto"></div>
         </div>
       </div>
     </div>
@@ -817,7 +858,11 @@ public class GrafoGame {
   <!-- TAB GRAFO -->
   <div id="tabGrafo" style="display:none">
     <div class="card">
-      <div class="card-header">🗺️ Grafo interactivo — Sedes del Mundial 2026</div>
+      <div class="card-header d-flex flex-wrap align-items-center gap-2">
+        <span>🗺️ Grafo interactivo — Sedes del Mundial 2026</span>
+        <span class="text-muted small">Arrastrá los nodos para reacomodar (las aristas siguen conectadas)</span>
+        <button class="btn btn-sm btn-outline-secondary ms-auto" onclick="restaurarPosiciones()">↩ Restaurar mapa</button>
+      </div>
       <div class="card-body p-1">
         <svg id="grafoSvg2"></svg>
         <div class="px-3 pb-3">
@@ -942,14 +987,25 @@ public class GrafoGame {
             </div>
           </div>
         </div>
-        <div class="mt-3 d-flex gap-2">
+        <div class="card p-3 mt-3">
+          <div class="fw-bold mb-2"><span class="admin-badge">PROFE</span> Modo demo</div>
+          <p class="text-muted small mb-2">Unite con tu nombre si querés probar el envío como alumno.</p>
+          <div class="d-flex flex-wrap gap-2">
+            <button class="btn btn-sm btn-outline-info" onclick="completarAutomatico(false); bootstrap.Modal.getInstance(document.getElementById('adminModal'))?.hide(); showTab('juego');">✨ Rellenar solución en el grafo</button>
+            <button class="btn btn-sm btn-info" onclick="completarAutomatico(true)" id="btnCompletarEnviar">📤 Rellenar y enviar respuesta</button>
+          </div>
+        </div>
+        <div class="mt-3 d-flex flex-wrap gap-2">
           <button class="btn btn-sm btn-outline-info" onclick="mostrarSolucion()">👁️ Mostrar solución al curso</button>
           <button class="btn btn-sm btn-outline-danger ms-auto" onclick="reiniciar()">🔄 Reiniciar juego</button>
         </div>
+        <p class="text-muted small mt-2 mb-0">Tip: activá una pregunta con los botones de arriba. Los alumnos la ven en la pestaña Juego.</p>
       </div>
     </div>
   </div>
 </div>
+
+<div id="nodoTooltip" role="tooltip"></div>
 
 <script>
 // ─── ESTADO CLIENTE ──────────────────────────────────────────
@@ -958,26 +1014,73 @@ let me = localStorage.getItem('grafogame_nombre') || null;
 let adminPass = null;
 let caminoSeleccionado = []; // nodos clickeados por el alumno
 let simulacionActiva = false;
+let arrastrandoNodo = false;
+let huboDragReciente = false;
 let NODOS = [], MATRIZ = [];
 
-// ─── POSICIONES FIJAS DE NODOS (mapa aproximado de sedes) ───
-const POS = [
-  {x:0.82,y:0.18}, // 0 NYC
-  {x:0.12,y:0.45}, // 1 LA
-  {x:0.60,y:0.22}, // 2 Chicago
-  {x:0.50,y:0.55}, // 3 Dallas
-  {x:0.55,y:0.65}, // 4 Houston
-  {x:0.72,y:0.75}, // 5 Miami
-  {x:0.10,y:0.18}, // 6 Seattle
-  {x:0.87,y:0.14}, // 7 Boston
-  {x:0.08,y:0.38}, // 8 SF
-  {x:0.65,y:0.72}, // 9 Atlanta
-  {x:0.42,y:0.85}, // 10 CDMX
-  {x:0.30,y:0.88}, // 11 Guadalajara
-  {x:0.40,y:0.75}, // 12 Monterrey
-  {x:0.73,y:0.12}, // 13 Toronto
-  {x:0.10,y:0.10}, // 14 Vancouver
+// ─── POSICIONES DE NODOS (mapa aproximado de sedes, arrastrables) ───
+// Posiciones calibradas sobre mapa Norteamérica (viewBox 1000×700)
+const POS_DEFAULT = [
+  {x:0.867,y:0.262}, {x:0.072,y:0.437}, {x:0.633,y:0.278}, {x:0.500,y:0.484}, {x:0.522,y:0.579},
+  {x:0.844,y:0.627}, {x:0.083,y:0.175}, {x:0.911,y:0.222}, {x:0.050,y:0.341}, {x:0.722,y:0.516},
+  {x:0.422,y:0.786}, {x:0.344,y:0.833}, {x:0.467,y:0.706}, {x:0.811,y:0.183}, {x:0.078,y:0.119}
 ];
+let POS = POS_DEFAULT.map(p => ({x: p.x, y: p.y}));
+
+function cargarPosiciones() {
+  try {
+    const raw = localStorage.getItem('grafogame_pos_v2') || localStorage.getItem('grafogame_pos');
+    if (!raw) return;
+    const arr = JSON.parse(raw);
+    if (Array.isArray(arr) && arr.length === POS_DEFAULT.length) {
+      POS = arr.map(p => ({ x: +p.x, y: +p.y }));
+    }
+  } catch (e) { /* ignorar */ }
+}
+function guardarPosiciones() {
+  localStorage.setItem('grafogame_pos_v2', JSON.stringify(POS));
+}
+function restaurarPosiciones() {
+  POS = POS_DEFAULT.map(p => ({ x: p.x, y: p.y }));
+  localStorage.removeItem('grafogame_pos');
+  localStorage.removeItem('grafogame_pos_v2');
+  renderGrafoSvg('grafoSvg');
+  renderGrafoSvg('grafoSvg2');
+  actualizarCaminoVisual();
+}
+function posToPx(p, W, H) {
+  return { x: p.x * W * 0.9 + W * 0.05, y: p.y * H * 0.9 + H * 0.05 };
+}
+function pxToPos(px, py, W, H) {
+  return {
+    x: Math.max(0, Math.min(1, (px - W * 0.05) / (W * 0.9))),
+    y: Math.max(0, Math.min(1, (py - H * 0.05) / (H * 0.9)))
+  };
+}
+function moverNodoEnPantalla(idx) {
+  ['grafoSvg', 'grafoSvg2'].forEach(svgId => {
+    const svgEl = document.getElementById(svgId);
+    if (!svgEl) return;
+    const W = svgEl.clientWidth || 600, H = svgEl.clientHeight || 480;
+    const { x, y } = posToPx(POS[idx], W, H);
+    d3.select('#' + svgId).select('#node-group-' + svgId + '-' + idx)
+      .attr('transform', `translate(${x},${y})`);
+    actualizarAristasNodo(svgId, idx, W, H);
+  });
+}
+function actualizarAristasNodo(svgId, idx, W, H) {
+  const svg = d3.select('#' + svgId);
+  for (let j = 0; j < NODOS.length; j++) {
+    if (j === idx) continue;
+    const i = Math.min(idx, j), k = Math.max(idx, j);
+    if (!MATRIZ[i] || MATRIZ[i][k] === 0) continue;
+    const p1 = posToPx(POS[i], W, H), p2 = posToPx(POS[k], W, H);
+    svg.select('#link-' + svgId + '-' + i + '-' + k)
+      .attr('x1', p1.x).attr('y1', p1.y).attr('x2', p2.x).attr('y2', p2.y);
+    svg.select('#link-label-' + svgId + '-' + i + '-' + k)
+      .attr('x', (p1.x + p2.x) / 2).attr('y', (p1.y + p2.y) / 2 - 4);
+  }
+}
 
 const COLORES_NODO = [
   '#58a6ff','#3fb950','#f85149','#e3b341','#bc8cff',
@@ -985,8 +1088,28 @@ const COLORES_NODO = [
   '#58a6ff','#3fb950','#e3b341','#bc8cff','#79c0ff'
 ];
 
+// Sedes del Mundial FIFA 2026 (dato pedagógico / referencia)
+const SEDES = [
+  { nombre: 'Nueva York / New Jersey', pais: 'EE.UU.', estadio: 'MetLife Stadium (East Rutherford)', nota: 'Gran área metropolitana del noreste.' },
+  { nombre: 'Los Ángeles', pais: 'EE.UU.', estadio: 'SoFi Stadium (Inglewood)', nota: 'Costa oeste; hub de entretenimiento y deportes.' },
+  { nombre: 'Chicago', pais: 'EE.UU.', estadio: 'Soldier Field', nota: 'Corazón del Medio Oeste estadounidense.' },
+  { nombre: 'Dallas', pais: 'EE.UU.', estadio: 'AT&T Stadium (Arlington)', nota: 'Enlace clave hacia México y el sur.' },
+  { nombre: 'Houston', pais: 'EE.UU.', estadio: 'NRG Stadium', nota: 'Puerto y ciudad multicultural del Golfo.' },
+  { nombre: 'Miami', pais: 'EE.UU.', estadio: 'Hard Rock Stadium (Miami Gardens)', nota: 'Puerta de entrada al Caribe y Latinoamérica.' },
+  { nombre: 'Seattle', pais: 'EE.UU.', estadio: 'Lumen Field', nota: 'Noroeste del Pacífico, cerca de Canadá.' },
+  { nombre: 'Boston', pais: 'EE.UU.', estadio: 'Gillette Stadium (Foxborough)', nota: 'Región histórica de Nueva Inglaterra.' },
+  { nombre: 'San Francisco / Bay Area', pais: 'EE.UU.', estadio: "Levi's Stadium (Santa Clara)", nota: 'Silicon Valley y costa californiana.' },
+  { nombre: 'Atlanta', pais: 'EE.UU.', estadio: 'Mercedes-Benz Stadium', nota: 'Hub del sureste con gran conectividad aérea.' },
+  { nombre: 'Ciudad de México', pais: 'México', estadio: 'Estadio Azteca', nota: 'Único estadio en tres Mundiales (1970, 1986, 2026).' },
+  { nombre: 'Guadalajara', pais: 'México', estadio: 'Estadio Akron', nota: 'Cuna del fútbol mexicano en el occidente.' },
+  { nombre: 'Monterrey', pais: 'México', estadio: 'Estadio BBVA', nota: 'Norte industrial y fronterizo de México.' },
+  { nombre: 'Toronto', pais: 'Canadá', estadio: 'BMO Field', nota: 'Mayor ciudad de Canadá; sede co-anfitriona.' },
+  { nombre: 'Vancouver', pais: 'Canadá', estadio: 'BC Place', nota: 'Costa del Pacífico canadiense.' },
+];
+
 // ─── INIT ─────────────────────────────────────────────────────
 document.addEventListener('DOMContentLoaded', () => {
+  cargarPosiciones();
   if (me) {
     document.getElementById('panelUnirse').style.display = 'none';
   }
@@ -1005,10 +1128,13 @@ async function load() {
 function renderTodo() {
   renderPregunta();
   renderRanking();
-  renderGrafoSvg('grafoSvg');
-  renderGrafoSvg('grafoSvg2');
+  if (!arrastrandoNodo) {
+    renderGrafoSvg('grafoSvg');
+    renderGrafoSvg('grafoSvg2');
+  }
   renderMatriz();
   poblarSelectores();
+  actualizarCaminoUI();
 }
 
 // ─── PREGUNTA ─────────────────────────────────────────────────
@@ -1020,7 +1146,10 @@ function renderPregunta() {
       <div style="font-size:2rem">⏳</div>
       <p>Esperando que el profe active una pregunta...</p>
     </div>`;
-    document.getElementById('btnEnviar').disabled = true;
+    const b1 = document.getElementById('btnEnviar');
+    const b2 = document.getElementById('btnDeshacer');
+    if (b1) b1.disabled = true;
+    if (b2) b2.disabled = true;
     return;
   }
 
@@ -1036,7 +1165,7 @@ function renderPregunta() {
       <span class="pregunta-tipo">${p.tipo.replace('_',' ')}</span>
       <span class="text-muted small">#${p.id}</span>
     </div>
-    <div class="pregunta-texto">${p.enunciado.replace(/\n/g,'<br>')}</div>
+    <div class="pregunta-texto">${p.enunciado.replace(/\\n/g,'<br>')}</div>
     <div class="timer-bar"><div class="timer-fill" id="timerFill" style="width:${pct}%;background:${color}"></div></div>
     <div class="d-flex justify-content-between mt-1">
       <span class="text-muted small">⏱️ ${p.transcurrido}s / ${p.tiempoLimite}s</span>
@@ -1044,10 +1173,63 @@ function renderPregunta() {
     </div>
   </div>`;
 
-  document.getElementById('btnEnviar').disabled = yaRespondi || !me || caminoSeleccionado.length === 0;
+  const btnEnviar = document.getElementById('btnEnviar');
+  const btnDeshacer = document.getElementById('btnDeshacer');
+  if (btnEnviar) {
+    btnEnviar.disabled = yaRespondi || !me || caminoSeleccionado.length === 0;
+    btnEnviar.title = me ? 'Enviar tu camino' : 'Unite al juego primero';
+  }
+  if (btnDeshacer) btnDeshacer.disabled = yaRespondi || !me || caminoSeleccionado.length === 0;
+  const aviso = document.getElementById('avisoUnirse');
+  if (aviso) aviso.style.display = me ? 'none' : '';
 }
 
 // ─── GRAFO SVG ────────────────────────────────────────────────
+const dragNodo = d3.drag()
+  .clickDistance(10)
+  .on('start', function(evt) {
+    arrastrandoNodo = true;
+    huboDragReciente = false;
+    d3.select(this).classed('dragging', true).raise();
+    ocultarTooltipSede();
+  })
+  .on('drag', function(evt) {
+    huboDragReciente = true;
+    const idx = +this.getAttribute('data-idx');
+    const svgId = this.getAttribute('data-svg');
+    const svgEl = document.getElementById(svgId);
+    if (!svgEl || isNaN(idx)) return;
+    const W = svgEl.clientWidth || 600, H = svgEl.clientHeight || 480;
+    const [mx, my] = d3.pointer(evt, svgEl);
+    POS[idx] = pxToPos(mx, my, W, H);
+    moverNodoEnPantalla(idx);
+  })
+  .on('end', function() {
+    d3.select(this).classed('dragging', false);
+    arrastrandoNodo = false;
+    if (huboDragReciente) {
+      guardarPosiciones();
+      setTimeout(() => { huboDragReciente = false; }, 80);
+    }
+  });
+
+function dibujarMapaFondo(svg, W, H) {
+  const ox = W * 0.05, oy = H * 0.05, sw = W * 0.9, sh = H * 0.9;
+  const g = svg.append('g').attr('class', 'mapa-fondo')
+    .attr('transform', 'translate(' + ox + ',' + oy + ') scale(' + (sw / 1000) + ',' + (sh / 700) + ')');
+  g.append('rect').attr('width', 1000).attr('height', 700).attr('fill', '#0a1420');
+  g.append('path').attr('class', 'mapa-pais mapa-can')
+    .attr('d', 'M55,35 L945,42 L925,215 L70,198 Z');
+  g.append('path').attr('class', 'mapa-pais mapa-usa')
+    .attr('d', 'M70,198 L925,215 L895,485 L95,468 Z');
+  g.append('path').attr('class', 'mapa-pais mapa-mex')
+    .attr('d', 'M185,468 L855,492 L795,665 L255,648 L165,535 Z');
+  [['CANADÁ', 500, 115], ['EE.UU.', 500, 340], ['MÉXICO', 490, 575]].forEach(function(t) {
+    g.append('text').attr('class', 'mapa-label').attr('x', t[1]).attr('y', t[2])
+      .attr('text-anchor', 'middle').text(t[0]);
+  });
+}
+
 function renderGrafoSvg(svgId) {
   if (!NODOS.length || !MATRIZ.length) return;
   const svgEl = document.getElementById(svgId);
@@ -1057,47 +1239,86 @@ function renderGrafoSvg(svgId) {
   const svg = d3.select('#' + svgId);
   svg.selectAll('*').remove();
 
+  dibujarMapaFondo(svg, W, H);
+
   // Aristas
   for (let i = 0; i < NODOS.length; i++) {
-    for (let j = i+1; j < NODOS.length; j++) {
+    for (let j = i + 1; j < NODOS.length; j++) {
       if (MATRIZ[i][j] === 0) continue;
-      const x1 = POS[i].x * W * 0.9 + W * 0.05;
-      const y1 = POS[i].y * H * 0.9 + H * 0.05;
-      const x2 = POS[j].x * W * 0.9 + W * 0.05;
-      const y2 = POS[j].y * H * 0.9 + H * 0.05;
-      svg.append('line').attr('class','link')
-        .attr('x1',x1).attr('y1',y1).attr('x2',x2).attr('y2',y2)
-        .attr('id', `link-${i}-${j}`);
-      // peso
-      svg.append('text').attr('class','link-label')
-        .attr('x',(x1+x2)/2).attr('y',(y1+y2)/2 - 4)
+      const p1 = posToPx(POS[i], W, H), p2 = posToPx(POS[j], W, H);
+      svg.append('line').attr('class', 'link')
+        .attr('x1', p1.x).attr('y1', p1.y).attr('x2', p2.x).attr('y2', p2.y)
+        .attr('id', 'link-' + svgId + '-' + i + '-' + j);
+      svg.append('text').attr('class', 'link-label')
+        .attr('x', (p1.x + p2.x) / 2).attr('y', (p1.y + p2.y) / 2 - 4)
+        .attr('id', 'link-label-' + svgId + '-' + i + '-' + j)
         .text(MATRIZ[i][j]);
     }
   }
 
-  // Nodos
+  // Nodos (arrastrables; clic corto sigue armando el camino en Juego)
   NODOS.forEach((nombre, idx) => {
-    const x = POS[idx].x * W * 0.9 + W * 0.05;
-    const y = POS[idx].y * H * 0.9 + H * 0.05;
-    const g = svg.append('g').attr('class','node').attr('transform',`translate(${x},${y})`);
+    const { x, y } = posToPx(POS[idx], W, H);
+    const g = svg.append('g').attr('class', 'node')
+      .attr('id', 'node-group-' + svgId + '-' + idx)
+      .attr('data-idx', idx)
+      .attr('data-svg', svgId)
+      .attr('transform', `translate(${x},${y})`)
+      .call(dragNodo);
 
-    g.append('circle').attr('r', 18)
+    g.append('circle').attr('r', 24)
       .attr('fill', COLORES_NODO[idx % COLORES_NODO.length])
-      .attr('stroke', '#0d1117').attr('id', `node-${svgId}-${idx}`)
+      .attr('stroke', '#0d1117').attr('id', 'node-' + svgId + '-' + idx)
       .on('click', () => clickNodo(idx));
 
-    // Etiqueta abreviada dentro
-    g.append('text').attr('dy','0.35em').attr('font-size','8px')
-      .text(nombre.slice(0,3));
-    // Nombre completo debajo
-    g.append('text').attr('dy','2em').attr('font-size','8px').attr('fill','var(--muted)')
+    g.on('mouseenter', (evt) => mostrarTooltipSede(evt, idx))
+      .on('mousemove', moverTooltipSede)
+      .on('mouseleave', ocultarTooltipSede);
+
+    g.append('text').attr('dy', '0.35em').attr('font-size', '10px')
+      .text(nombre.slice(0, 3));
+    g.append('text').attr('dy', '2.1em').attr('font-size', '9px').attr('fill', 'var(--muted)')
       .text(idx);
   });
 }
 
+// ─── TOOLTIP SEDE ─────────────────────────────────────────────
+function mostrarTooltipSede(evt, idx) {
+  const tt = document.getElementById('nodoTooltip');
+  const sede = SEDES[idx];
+  const codigo = NODOS[idx] || ('Nodo ' + idx);
+  if (!tt || !sede) return;
+  tt.innerHTML = `<div class="tt-titulo">${codigo} · Nodo ${idx}</div>`
+    + `<div><strong>${sede.nombre}</strong> (${sede.pais})</div>`
+    + `<div class="tt-estadio">🏟️ ${sede.estadio}</div>`
+    + `<div class="tt-nota">${sede.nota}</div>`;
+  tt.style.display = 'block';
+  moverTooltipSede(evt);
+}
+function moverTooltipSede(evt) {
+  const tt = document.getElementById('nodoTooltip');
+  if (!tt || tt.style.display === 'none') return;
+  const pad = 14;
+  let x = evt.clientX + pad, y = evt.clientY + pad;
+  const rect = tt.getBoundingClientRect();
+  if (x + rect.width > window.innerWidth - 8) x = evt.clientX - rect.width - pad;
+  if (y + rect.height > window.innerHeight - 8) y = evt.clientY - rect.height - pad;
+  tt.style.left = x + 'px';
+  tt.style.top = y + 'px';
+}
+function ocultarTooltipSede() {
+  const tt = document.getElementById('nodoTooltip');
+  if (tt) tt.style.display = 'none';
+}
+
 // ─── CLICK NODO (armar camino) ────────────────────────────────
 function clickNodo(idx) {
+  if (huboDragReciente) return;
   if (!S.pregunta?.activa) return;
+  if (!me) {
+    alert('Primero unite al juego con tu nombre (panel derecho).');
+    return;
+  }
   const miDato = S.ranking?.find(r => r.nombre === me);
   if (miDato?.respondio) return;
 
@@ -1108,7 +1329,10 @@ function clickNodo(idx) {
     caminoSeleccionado.push(idx);
   }
 
-  // actualizar visual
+  actualizarCaminoUI();
+}
+
+function actualizarCaminoUI() {
   actualizarCaminoVisual();
   const preview = document.getElementById('caminoPreview');
   if (preview) {
@@ -1116,7 +1340,23 @@ function clickNodo(idx) {
       ? caminoSeleccionado.map(i => `${i}(${NODOS[i]})`).join(' → ')
       : '— ninguno —';
   }
-  document.getElementById('btnEnviar').disabled = caminoSeleccionado.length === 0 || !me;
+  const vacio = caminoSeleccionado.length === 0;
+  const unido = !!me;
+  const btnEnviar = document.getElementById('btnEnviar');
+  const btnDeshacer = document.getElementById('btnDeshacer');
+  const aviso = document.getElementById('avisoUnirse');
+  if (btnEnviar) {
+    btnEnviar.disabled = vacio || !unido;
+    btnEnviar.title = unido ? 'Enviar tu camino al servidor' : 'Primero unite con tu nombre';
+  }
+  if (btnDeshacer) btnDeshacer.disabled = vacio || !unido;
+  if (aviso) aviso.style.display = unido ? 'none' : '';
+}
+
+function deshacerUltimoNodo() {
+  if (!caminoSeleccionado.length) return;
+  caminoSeleccionado.pop();
+  actualizarCaminoUI();
 }
 
 function actualizarCaminoVisual() {
@@ -1137,10 +1377,7 @@ function actualizarCaminoVisual() {
 
 function limpiarCamino() {
   caminoSeleccionado = [];
-  actualizarCaminoVisual();
-  const preview = document.getElementById('caminoPreview');
-  if (preview) preview.textContent = '— ninguno —';
-  document.getElementById('btnEnviar').disabled = true;
+  actualizarCaminoUI();
 }
 
 // ─── ANIMACIONES BFS / DFS ────────────────────────────────────
@@ -1176,9 +1413,9 @@ async function animarOrden(orden, tipo, svgId) {
     const el = document.getElementById(`node-${svgId}-${nodo}`);
     if (el) {
       el.style.fill = tipo === 'bfs' ? 'var(--green)' : 'var(--purple)';
-      el.style.r = '24';
+      el.style.r = '30';
       await sleep(600);
-      el.style.r = '18';
+      el.style.r = '24';
     }
   }
 }
@@ -1281,10 +1518,15 @@ async function unirse() {
   localStorage.setItem('grafogame_nombre', nombre);
   document.getElementById('panelUnirse').style.display = 'none';
   await load();
+  actualizarCaminoUI();
 }
 
 async function enviarRespuesta() {
-  if (!me || caminoSeleccionado.length === 0) return;
+  if (!me) {
+    alert('Tenés que unirte al juego con tu nombre antes de enviar la respuesta.');
+    return;
+  }
+  if (caminoSeleccionado.length === 0) return;
   const r = await api('/api/responder', {nombre: me, camino: caminoSeleccionado.join(',')});
   if (r.error) { alert(r.error); return; }
   const msg = r.correcta
@@ -1300,38 +1542,70 @@ async function enviarRespuesta() {
 // ─── ADMIN ────────────────────────────────────────────────────
 function openAdmin() {
   document.getElementById('adminLoginPass').value = '';
-  new bootstrap.Modal(document.getElementById('adminLoginModal')).show();
+  bootstrap.Modal.getOrCreateInstance(document.getElementById('adminLoginModal')).show();
 }
 function adminLogin() {
   const p = document.getElementById('adminLoginPass').value;
   if (p !== 'profe2026') { alert('Contraseña incorrecta'); return; }
   adminPass = p;
-  bootstrap.Modal.getInstance(document.getElementById('adminLoginModal')).hide();
+  const loginEl = document.getElementById('adminLoginModal');
+  bootstrap.Modal.getInstance(loginEl)?.hide() ?? bootstrap.Modal.getOrCreateInstance(loginEl).hide();
   renderAdminPreguntas();
-  new bootstrap.Modal(document.getElementById('adminModal')).show();
+  bootstrap.Modal.getOrCreateInstance(document.getElementById('adminModal')).show();
 }
 
 function renderAdminPreguntas() {
-  const pregs = S.totalPreguntas || 0;
-  // Listar preguntas conocidas (del estado)
-  const p = S.pregunta;
-  let html = '';
-  if (p) {
-    html += `<div class="card p-2 mb-1 border-${p.activa ? 'success' : 'secondary'}">
-      <div class="d-flex align-items-center gap-2">
-        <span class="badge bg-${p.activa ? 'success' : 'secondary'}">#${p.id}</span>
-        <span class="small flex-fill">${p.tipo} | ${NODOS[p.origen]||p.origen} → ${NODOS[p.destino]||p.destino}</span>
-        ${p.activa ? '<span class="text-success small">● Activa</span>' : `<button class="btn btn-sm btn-success" onclick="activarPregunta(${p.id})">Activar</button>`}
-      </div>
-    </div>`;
+  const lista = S.preguntas || [];
+  const activaId = S.pregunta?.activa ? S.pregunta.id : null;
+  let html = '<div class="text-muted small mb-2">Clic en <strong>Activar</strong> para lanzar la pregunta al curso:</div>';
+  if (!lista.length) {
+    html += '<p class="text-muted small mb-0">No hay preguntas. Usá «Crear y activar».</p>';
+  } else {
+    lista.forEach(pr => {
+      const esActiva = pr.id === activaId;
+      html += `<div class="card p-2 mb-2 border-${esActiva ? 'success' : 'secondary'}">
+        <div class="d-flex align-items-center gap-2 flex-wrap">
+          <span class="badge bg-${esActiva ? 'success' : 'secondary'}">#${pr.id}</span>
+          <span class="small flex-fill">${pr.etiqueta || pr.tipo}</span>
+          ${esActiva
+            ? '<span class="text-success small fw-bold">● EN VIVO</span>'
+            : `<button class="btn btn-sm btn-success" onclick="activarPregunta(${pr.id})">Activar</button>`}
+        </div>
+      </div>`;
+    });
   }
-  // Botones para activar preguntas predefinidas
-  html += `<div class="mt-2"><div class="text-muted small mb-1">Preguntas predefinidas (${pregs}):</div>`;
-  for (let i = 1; i <= pregs; i++) {
-    html += `<button class="btn btn-sm btn-outline-primary me-1 mb-1" onclick="activarPregunta(${i})">#${i}</button>`;
-  }
-  html += '</div>';
   document.getElementById('listaPreguntasAdmin').innerHTML = html;
+  const btn = document.getElementById('btnCompletarEnviar');
+  if (btn) btn.disabled = !me || !S.pregunta?.activa;
+}
+
+async function completarAutomatico(enviar) {
+  if (!S.pregunta?.activa) {
+    alert('Primero activá una pregunta desde Admin.');
+    return;
+  }
+  const r = await api('/api/resolver');
+  if (r.error) { alert(r.error); return; }
+  const nums = Array.isArray(r.respuesta) ? r.respuesta : [];
+  if (r.tipo === 'MATRIZ_QUERY') {
+    const ok = nums[0] === 1;
+    alert('Pregunta de matriz (no usa clic en nodos).\\nSolución: ' + (ok ? 'conectados, peso ' + nums[1] : 'no conectados (0)'));
+    return;
+  }
+  if (!nums.length) {
+    alert('No hay solución para esta pregunta (¿nodos desconectados?).');
+    return;
+  }
+  caminoSeleccionado = nums.slice();
+  actualizarCaminoUI();
+  showTab('juego');
+  if (enviar) {
+    if (!me) {
+      alert('Para enviar la respuesta, unite al juego con tu nombre (panel de arriba).\\nYa rellené el camino correcto en el grafo.');
+      return;
+    }
+    await enviarRespuesta();
+  }
 }
 
 async function activarPregunta(id) {

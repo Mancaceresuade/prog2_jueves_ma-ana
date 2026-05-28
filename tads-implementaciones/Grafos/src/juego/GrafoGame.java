@@ -7,6 +7,7 @@ import java.nio.charset.StandardCharsets;
 import java.nio.file.*;
 import java.util.*;
 import java.util.concurrent.*;
+import java.util.concurrent.TimeUnit;
 
 /**
  * ╔══════════════════════════════════════════════════════════════════╗
@@ -113,6 +114,42 @@ public class GrafoGame {
             }
         }
 
+        // Dijkstra desde origen hasta destino — devuelve camino de menor costo total
+        List<Integer> dijkstra(int origen, int destino) {
+            int[] dist  = new int[n];
+            int[] padre = new int[n];
+            Arrays.fill(dist,  Integer.MAX_VALUE);
+            Arrays.fill(padre, -1);
+            dist[origen] = 0;
+            boolean[] visto = new boolean[n];
+            for (int iter = 0; iter < n; iter++) {
+                int u = -1;
+                for (int i = 0; i < n; i++) {
+                    if (!visto[i] && dist[i] != Integer.MAX_VALUE)
+                        if (u == -1 || dist[i] < dist[u]) u = i;
+                }
+                if (u == -1 || u == destino) break;
+                visto[u] = true;
+                for (int v = 0; v < n; v++) {
+                    if (mat[u][v] != 0 && !visto[v]) {
+                        int nd = dist[u] + mat[u][v];
+                        if (nd < dist[v]) { dist[v] = nd; padre[v] = u; }
+                    }
+                }
+            }
+            List<Integer> camino = new ArrayList<>();
+            if (padre[destino] == -1 && destino != origen) return camino;
+            for (int x = destino; x != -1; x = padre[x]) camino.add(0, x);
+            return camino;
+        }
+
+        int costoCamino(List<Integer> camino) {
+            int total = 0;
+            for (int i = 0; i < camino.size() - 1; i++)
+                total += mat[camino.get(i)][camino.get(i+1)];
+            return total;
+        }
+
         // Serializa la matriz a JSON para el frontend
         String matrizToJson() {
             StringBuilder sb = new StringBuilder("[");
@@ -173,13 +210,14 @@ public class GrafoGame {
 
     static class Pregunta {
         int id;
-        String tipo;          // "BFS_ORDEN", "BFS_CAMINO", "DFS_ORDEN", "MATRIZ_QUERY"
+        String tipo;          // "BFS_ORDEN", "BFS_CAMINO", "DFS_ORDEN", "MATRIZ_QUERY", "DIJKSTRA_CAMINO"
         String enunciado;
         int origen, destino;  // nodos relevantes
         List<Integer> respuestaCorrecta;
         boolean activa = false;
         long iniciadaEn = 0;
         int tiempoLimite = 45; // segundos
+        int metaExtra = 0;    // para DIJKSTRA_CAMINO: costo óptimo total
 
         Pregunta(int id, String tipo, String enunciado, int origen, int destino, List<Integer> resp) {
             this.id = id; this.tipo = tipo; this.enunciado = enunciado;
@@ -243,6 +281,24 @@ public class GrafoGame {
         // Precalcular preguntas base
         if (preguntas.isEmpty()) generarPreguntas();
 
+        // Auto-expire: desactiva la pregunta activa cuando se agota el tiempo
+        ScheduledExecutorService autoExpire = Executors.newSingleThreadScheduledExecutor();
+        autoExpire.scheduleAtFixedRate(() -> {
+            synchronized (GrafoGame.class) {
+                if (preguntaActualId < 0) return;
+                preguntas.stream()
+                    .filter(p -> p.id == preguntaActualId && p.activa)
+                    .findFirst()
+                    .ifPresent(p -> {
+                        long seg = (System.currentTimeMillis() - p.iniciadaEn) / 1000;
+                        if (seg >= p.tiempoLimite) {
+                            p.activa = false;
+                            System.out.println("⏰ Pregunta #" + p.id + " expirada automáticamente");
+                        }
+                    });
+            }
+        }, 5, 5, TimeUnit.SECONDS);
+
         int port = Integer.parseInt(System.getenv().getOrDefault("PORT", "8081"));
         HttpServer server = HttpServer.create(new InetSocketAddress("0.0.0.0", port), 0);
         server.setExecutor(Executors.newFixedThreadPool(4));
@@ -298,6 +354,7 @@ public class GrafoGame {
             sb.append(",\"tiempoLimite\":").append(pActual.tiempoLimite);
             long transcurrido = pActual.activa ? (System.currentTimeMillis() - pActual.iniciadaEn) / 1000 : 0;
             sb.append(",\"transcurrido\":").append(transcurrido);
+            sb.append(",\"metaExtra\":").append(pActual.metaExtra);
             sb.append("}");
         } else {
             sb.append(",\"pregunta\":null");
@@ -349,6 +406,8 @@ public class GrafoGame {
                 return "#" + p.id + " · DFS orden desde " + CIUDADES[p.origen];
             case "MATRIZ_QUERY":
                 return "#" + p.id + " · Matriz: " + CIUDADES[p.origen] + " ↔ " + CIUDADES[p.destino];
+            case "DIJKSTRA_CAMINO":
+                return "#" + p.id + " · Dijkstra: " + CIUDADES[p.origen] + " → " + CIUDADES[p.destino] + " (costo opt=" + p.metaExtra + ")";
             default:
                 return "#" + p.id + " · " + p.tipo;
         }
@@ -393,6 +452,8 @@ public class GrafoGame {
         boolean correcta;
         if ("BFS_CAMINO".equals(p.tipo)) {
             correcta = esCaminoOptimoValido(camino, p.origen, p.destino, p.respuestaCorrecta.size());
+        } else if ("DIJKSTRA_CAMINO".equals(p.tipo)) {
+            correcta = esCaminoOptimoDijkstra(camino, p.origen, p.destino, p.metaExtra);
         } else {
             correcta = camino.equals(p.respuestaCorrecta);
         }
@@ -502,6 +563,24 @@ public class GrafoGame {
      * BFS no garantiza unicidad del camino, así que esto es lo correcto
      * para no marcar como incorrectas respuestas válidas.
      */
+    /**
+     * Acepta cualquier camino con el mismo costo total mínimo que Dijkstra encontró.
+     * El alumno puede elegir un camino alternativo de igual costo y se considera correcto.
+     */
+    static boolean esCaminoOptimoDijkstra(List<Integer> camino, int origen, int destino, int costoOptimo) {
+        if (camino == null || camino.isEmpty()) return false;
+        if (camino.get(0) != origen) return false;
+        if (camino.get(camino.size() - 1) != destino) return false;
+        int costo = 0;
+        for (int i = 0; i < camino.size() - 1; i++) {
+            int u = camino.get(i), v = camino.get(i + 1);
+            if (u < 0 || u >= grafo.n || v < 0 || v >= grafo.n) return false;
+            if (grafo.mat[u][v] == 0) return false;
+            costo += grafo.mat[u][v];
+        }
+        return costo == costoOptimo;
+    }
+
     static boolean esCaminoOptimoValido(List<Integer> camino, int origen, int destino, int longitudOptima) {
         if (camino == null || camino.size() != longitudOptima) return false;
         if (camino.isEmpty()) return false;
@@ -519,7 +598,7 @@ public class GrafoGame {
     // ║  LÓGICA DEL JUEGO                                       ║
     // ╚══════════════════════════════════════════════════════════╝
     static void generarPreguntas() {
-        // BFS camino más corto
+        // BFS camino más corto (por saltos, ignora pesos)
         generarPregunta("BFS_CAMINO", 7, 10);   // Boston → CDMX
         generarPregunta("BFS_CAMINO", 14, 5);   // Vancouver → Miami
         generarPregunta("BFS_CAMINO", 0, 11);   // NYC → Guadalajara
@@ -528,32 +607,37 @@ public class GrafoGame {
         generarPregunta("BFS_ORDEN", 10, -1);   // BFS desde CDMX
         // DFS orden
         generarPregunta("DFS_ORDEN", 7, -1);    // DFS desde Boston
-        // NOTA: MATRIZ_QUERY queda disponible desde el panel Admin
-        // pero no se predefine porque la UI actual no permite responder
-        // (los alumnos clickean nodos, no escriben "1,peso").
+        // MATRIZ_QUERY
+        generarPregunta("MATRIZ_QUERY", 0, 5);  // ¿NYC ↔ Miami?
+        generarPregunta("MATRIZ_QUERY", 3, 14); // ¿Dallas ↔ Vancouver?
+        // Dijkstra camino de menor costo (difiere de BFS cuando los pesos importan)
+        generarPregunta("DIJKSTRA_CAMINO", 14, 4); // Vancouver→Houston: BFS da costo 9, Dijkstra 7
+        generarPregunta("DIJKSTRA_CAMINO", 6, 5);  // Seattle→Miami:    BFS da costo 11, Dijkstra 9
+        generarPregunta("DIJKSTRA_CAMINO", 3, 14); // Dallas→Vancouver:  BFS da costo 9, Dijkstra 6
     }
 
     static void generarPregunta(String tipo, int origen, int destino) {
         List<Integer> respuesta;
         String enunciado;
+        int costoOptimo = 0;
         switch (tipo) {
             case "BFS_CAMINO":
                 respuesta = grafo.bfsCamino(origen, destino);
-                enunciado = "🗺️ BFS: ¿Cuál es el camino más corto de "
+                enunciado = "🗺️ BFS: ¿Cuál es el camino más corto (menos saltos) de "
                         + CIUDADES[origen] + " a " + CIUDADES[destino] + "?\n"
-                        + "Ingresá los nodos en orden separados por coma (ej: 0,2,3)";
+                        + "Hacé clic en los nodos en orden para construir el camino";
                 break;
             case "BFS_ORDEN":
                 respuesta = grafo.bfs(origen);
                 enunciado = "🔍 BFS: ¿En qué orden visita BFS todos los nodos partiendo de "
                         + CIUDADES[origen] + " (nodo " + origen + ")?\n"
-                        + "Ingresá el orden completo de visita";
+                        + "Hacé clic en los nodos en el orden en que BFS los visitaría";
                 break;
             case "DFS_ORDEN":
                 respuesta = grafo.dfs(origen);
                 enunciado = "🌀 DFS: ¿En qué orden visita DFS todos los nodos partiendo de "
                         + CIUDADES[origen] + " (nodo " + origen + ")?\n"
-                        + "Ingresá el orden completo de visita";
+                        + "Hacé clic en los nodos en el orden en que DFS los visitaría";
                 break;
             case "MATRIZ_QUERY": {
                 int peso = grafo.mat[origen][destino];
@@ -566,8 +650,17 @@ public class GrafoGame {
                     respuesta.add(0);
                 }
                 enunciado = "📊 MATRIZ: ¿Están conectados " + CIUDADES[origen]
-                        + " y " + CIUDADES[destino] + "? Si sí, ¿cuál es el peso?\n"
-                        + "Respondé: '1,peso' si están conectados, '0' si no";
+                        + " y " + CIUDADES[destino] + "?\n"
+                        + "Seleccioná Sí/No y el peso si corresponde";
+                break;
+            }
+            case "DIJKSTRA_CAMINO": {
+                respuesta = grafo.dijkstra(origen, destino);
+                costoOptimo = grafo.costoCamino(respuesta);
+                enunciado = "🏆 DIJKSTRA: ¿Cuál es el camino de MENOR COSTO de "
+                        + CIUDADES[origen] + " a " + CIUDADES[destino] + "?\n"
+                        + "Considerá los pesos de las aristas (no alcanza con menos saltos).\n"
+                        + "Se acepta cualquier camino con el mismo costo mínimo.";
                 break;
             }
             default:
@@ -575,7 +668,9 @@ public class GrafoGame {
                 enunciado = "Pregunta desconocida";
                 break;
         }
-        preguntas.add(new Pregunta(nextPregId++, tipo, enunciado, origen, destino, respuesta));
+        Pregunta p = new Pregunta(nextPregId++, tipo, enunciado, origen, destino, respuesta);
+        p.metaExtra = costoOptimo;
+        preguntas.add(p);
     }
 
     // ╔══════════════════════════════════════════════════════════╗

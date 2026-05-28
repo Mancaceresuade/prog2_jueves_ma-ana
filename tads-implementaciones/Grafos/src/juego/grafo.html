@@ -148,40 +148,15 @@
           <div class="card-body p-1">
             <svg id="grafoSvg"></svg>
             <div class="px-3 pb-3">
-              <!-- Panel para preguntas de tipo nodo (BFS/DFS/Dijkstra) -->
-              <div id="panelRespuestaNodos">
-                <div class="text-muted small">Camino seleccionado:</div>
-                <div class="camino-preview" id="caminoPreview">— ninguno —</div>
-                <div id="avisoUnirse" class="alert alert-warning py-2 px-3 mt-2 mb-0 small" role="alert">
-                  👤 Unite con tu nombre (panel derecho) para poder enviar tu respuesta.
-                </div>
-                <div class="d-flex flex-wrap gap-2 mt-2 align-items-center">
-                  <button type="button" class="btn btn-sm btn-outline-warning" onclick="deshacerUltimoNodo()" id="btnDeshacer" disabled>↩ Quitar último nodo</button>
-                  <button type="button" class="btn btn-sm btn-outline-secondary" onclick="limpiarCamino()">Limpiar todo</button>
-                  <button type="button" class="btn btn-sm btn-success ms-auto" onclick="enviarRespuesta()" id="btnEnviar" disabled title="Unite al juego primero">Enviar respuesta</button>
-                </div>
+              <div class="text-muted small">Camino seleccionado:</div>
+              <div class="camino-preview" id="caminoPreview">— ninguno —</div>
+              <div id="avisoUnirse" class="alert alert-warning py-2 px-3 mt-2 mb-0 small" role="alert">
+                👤 Unite con tu nombre (panel derecho) para poder enviar tu respuesta.
               </div>
-              <!-- Panel para preguntas MATRIZ_QUERY -->
-              <div id="panelRespuestaMatriz" style="display:none">
-                <div class="text-muted small mb-2">¿Están conectados estos nodos?</div>
-                <div class="d-flex flex-wrap gap-3 align-items-center mb-2">
-                  <div class="form-check">
-                    <input class="form-check-input" type="radio" name="mqConectado" id="mqSi" value="1" onchange="togglePesoInput()">
-                    <label class="form-check-label text-success" for="mqSi">✅ Sí, están conectados</label>
-                  </div>
-                  <div class="form-check">
-                    <input class="form-check-input" type="radio" name="mqConectado" id="mqNo" value="0" onchange="togglePesoInput()">
-                    <label class="form-check-label text-danger" for="mqNo">❌ No están conectados</label>
-                  </div>
-                </div>
-                <div id="mqPesoContainer" style="display:none" class="mb-2">
-                  <label class="text-muted small">Peso de la arista:</label>
-                  <input type="number" id="mqPeso" class="form-control form-control-sm" placeholder="Ej: 3" min="1" max="99" style="max-width:100px">
-                </div>
-                <div id="avisoUnirseMatriz" class="alert alert-warning py-2 px-3 mb-2 small" role="alert" style="display:none">
-                  👤 Unite con tu nombre (panel derecho) para poder enviar tu respuesta.
-                </div>
-                <button type="button" class="btn btn-sm btn-success" onclick="enviarMatrizQuery()" id="btnEnviarMatriz" disabled>Enviar respuesta</button>
+              <div class="d-flex flex-wrap gap-2 mt-2 align-items-center">
+                <button type="button" class="btn btn-sm btn-outline-warning" onclick="deshacerUltimoNodo()" id="btnDeshacer" disabled>↩ Quitar último nodo</button>
+                <button type="button" class="btn btn-sm btn-outline-secondary" onclick="limpiarCamino()">Limpiar todo</button>
+                <button type="button" class="btn btn-sm btn-success ms-auto" onclick="enviarRespuesta()" id="btnEnviar" disabled title="Unite al juego primero">Enviar respuesta</button>
               </div>
             </div>
           </div>
@@ -224,7 +199,7 @@
         <svg id="grafoSvg2"></svg>
         <div class="px-3 pb-3">
           <div class="row g-2 mt-1">
-            <div class="col-md-4">
+            <div class="col-md-6">
               <div class="card p-3">
                 <div class="fw-bold mb-2 text-success">▶ BFS desde nodo:</div>
                 <div class="d-flex gap-2">
@@ -233,23 +208,13 @@
                 </div>
               </div>
             </div>
-            <div class="col-md-4">
+            <div class="col-md-6">
               <div class="card p-3">
-                <div class="fw-bold mb-2" style="color:var(--purple)">▶ DFS desde nodo:</div>
+                <div class="fw-bold mb-2 text-purple" style="color:var(--purple)">▶ DFS desde nodo:</div>
                 <div class="d-flex gap-2">
                   <select id="dfsOrigen" class="form-select form-select-sm"></select>
                   <button class="btn btn-sm btn-outline-light" style="border-color:var(--purple);color:var(--purple)" onclick="animarDFS()">Animar DFS</button>
                 </div>
-              </div>
-            </div>
-            <div class="col-md-4">
-              <div class="card p-3">
-                <div class="fw-bold mb-2" style="color:var(--orange)">▶ Dijkstra (menor costo):</div>
-                <div class="d-flex gap-2 mb-1">
-                  <select id="dijkOrigen" class="form-select form-select-sm"></select>
-                  <select id="dijkDestino" class="form-select form-select-sm"></select>
-                </div>
-                <button class="btn btn-sm w-100" style="background:#3a2000;border:1px solid var(--orange);color:var(--orange)" onclick="animarDijkstra()">Animar Dijkstra</button>
               </div>
             </div>
           </div>
@@ -326,8 +291,7 @@
             <div class="card p-3">
               <div class="fw-bold mb-2">➕ Nueva pregunta</div>
               <select id="nuevoTipo" class="form-select form-select-sm mb-2">
-                <option value="BFS_CAMINO">BFS — Camino más corto (saltos)</option>
-                <option value="DIJKSTRA_CAMINO">Dijkstra — Camino de menor costo</option>
+                <option value="BFS_CAMINO">BFS — Camino más corto</option>
                 <option value="BFS_ORDEN">BFS — Orden de visita</option>
                 <option value="DFS_ORDEN">DFS — Orden de visita</option>
                 <option value="MATRIZ_QUERY">Matriz — Consultar arista</option>
@@ -381,6 +345,7 @@ let S = {}; // state del servidor
 let me = localStorage.getItem('grafogame_nombre') || null;
 let adminPass = null;
 let caminoSeleccionado = []; // nodos clickeados por el alumno
+let preguntaVistaId = null; // detecta cambio de pregunta activa para limpiar UI
 let simulacionActiva = false;
 let arrastrandoNodo = false;
 let huboDragReciente = false;
@@ -490,7 +455,54 @@ async function load() {
   S = r;
   NODOS = S.nodos || [];
   MATRIZ = S.matriz || [];
+
+  sincronizarJugadorConServidor();
+  sincronizarPreguntaActiva();
+
   renderTodo();
+}
+function sincronizarJugadorConServidor() {
+  const panel = document.getElementById('panelUnirse');
+  const input = document.getElementById('inputNombre');
+
+  if (!me) {
+    if (panel) panel.style.display = '';
+    return;
+  }
+
+  const existeEnServidor = (S.ranking || []).some(j => j.nombre === me);
+
+  if (!existeEnServidor) {
+    const nombreGuardado = me;
+    me = null;
+    localStorage.removeItem('grafogame_nombre');
+
+    if (input) input.value = nombreGuardado;
+    if (panel) panel.style.display = '';
+
+    const aviso = document.getElementById('avisoUnirse');
+    if (aviso) {
+      aviso.style.display = '';
+      aviso.innerHTML = '👤 Tu nombre estaba guardado en este navegador, pero no figura en el servidor. Volvé a unirte para participar.';
+    }
+  } else {
+    if (panel) panel.style.display = 'none';
+  }
+}
+
+function sincronizarPreguntaActiva() {
+  const idActual = S.pregunta?.activa ? S.pregunta.id : null;
+
+  if (idActual === preguntaVistaId) return;
+
+  preguntaVistaId = idActual;
+  caminoSeleccionado = [];
+
+  const btn = document.getElementById('btnEnviar');
+  if (btn) {
+    btn.textContent = 'Enviar respuesta';
+    btn.disabled = true;
+  }
 }
 
 function renderTodo() {
@@ -509,15 +521,6 @@ function renderTodo() {
 function renderPregunta() {
   const box = document.getElementById('preguntaBox');
   const p = S.pregunta;
-  const esMatriz = p?.tipo === 'MATRIZ_QUERY';
-  const esDijkstra = p?.tipo === 'DIJKSTRA_CAMINO';
-
-  // Mostrar panel correcto según tipo
-  const panelNodos  = document.getElementById('panelRespuestaNodos');
-  const panelMatriz = document.getElementById('panelRespuestaMatriz');
-  if (panelNodos)  panelNodos.style.display  = (p?.activa && esMatriz) ? 'none' : '';
-  if (panelMatriz) panelMatriz.style.display = (p?.activa && esMatriz) ? '' : 'none';
-
   if (!p || !p.activa) {
     box.innerHTML = `<div class="card p-4 text-center text-muted">
       <div style="font-size:2rem">⏳</div>
@@ -530,54 +533,35 @@ function renderPregunta() {
     return;
   }
 
+  // verificar si ya respondí
   const miDato = S.ranking?.find(r => r.nombre === me);
   const yaRespondi = miDato?.respondio;
 
   const pct = Math.max(0, Math.min(100, (1 - p.transcurrido / p.tiempoLimite) * 100));
   const color = pct > 50 ? 'var(--green)' : pct > 20 ? 'var(--orange)' : 'var(--red)';
 
-  // Hint extra para Dijkstra: mostrar costo óptimo
-  const dijkHint = esDijkstra && p.metaExtra
-    ? `<div class="mt-2 p-2 rounded" style="background:#2a1800;border:1px solid var(--orange);font-size:.85rem">
-        🏆 Costo mínimo a encontrar: <strong style="color:var(--orange)">${p.metaExtra}</strong>
-        &nbsp;|&nbsp; Se acepta cualquier camino válido con ese costo total.
-       </div>`
-    : '';
-
   box.innerHTML = `<div class="pregunta-box slide-in">
     <div class="d-flex justify-content-between align-items-start">
-      <span class="pregunta-tipo">${p.tipo.replace(/_/g,' ')}</span>
+      <span class="pregunta-tipo">${p.tipo.replace('_',' ')}</span>
       <span class="text-muted small">#${p.id}</span>
     </div>
     <div class="pregunta-texto">${p.enunciado.replace(/\\n/g,'<br>')}</div>
-    ${dijkHint}
-    <div class="timer-bar mt-2"><div class="timer-fill" id="timerFill" style="width:${pct}%;background:${color}"></div></div>
+    <div class="timer-bar"><div class="timer-fill" id="timerFill" style="width:${pct}%;background:${color}"></div></div>
     <div class="d-flex justify-content-between mt-1">
       <span class="text-muted small">⏱️ ${p.transcurrido}s / ${p.tiempoLimite}s</span>
       ${yaRespondi ? `<span class="badge badge-correcto">✅ Respondido</span>` : `<span class="pulsing text-warning small">● Respondiendo...</span>`}
     </div>
   </div>`;
 
-  if (esMatriz) {
-    // Habilitar/deshabilitar panel de matriz
-    const btnM = document.getElementById('btnEnviarMatriz');
-    const avisoM = document.getElementById('avisoUnirseMatriz');
-    if (btnM)   btnM.disabled = yaRespondi || !me;
-    if (avisoM) avisoM.style.display = me ? 'none' : '';
-    if (yaRespondi) {
-      if (btnM) { btnM.textContent = '✅ Ya respondiste'; btnM.disabled = true; }
-    }
-  } else {
-    const btnEnviar  = document.getElementById('btnEnviar');
-    const btnDeshacer = document.getElementById('btnDeshacer');
-    if (btnEnviar) {
-      btnEnviar.disabled = yaRespondi || !me || caminoSeleccionado.length === 0;
-      btnEnviar.title = me ? 'Enviar tu camino' : 'Unite al juego primero';
-    }
-    if (btnDeshacer) btnDeshacer.disabled = yaRespondi || !me || caminoSeleccionado.length === 0;
-    const aviso = document.getElementById('avisoUnirse');
-    if (aviso) aviso.style.display = me ? 'none' : '';
+  const btnEnviar = document.getElementById('btnEnviar');
+  const btnDeshacer = document.getElementById('btnDeshacer');
+  if (btnEnviar) {
+    btnEnviar.disabled = yaRespondi || !me || caminoSeleccionado.length === 0;
+    btnEnviar.title = me ? 'Enviar tu camino' : 'Unite al juego primero';
   }
+  if (btnDeshacer) btnDeshacer.disabled = yaRespondi || !me || caminoSeleccionado.length === 0;
+  const aviso = document.getElementById('avisoUnirse');
+  if (aviso) aviso.style.display = me ? 'none' : '';
 }
 
 // ─── GRAFO SVG ────────────────────────────────────────────────
@@ -656,25 +640,47 @@ function renderGrafoSvg(svgId) {
   NODOS.forEach((nombre, idx) => {
     const { x, y } = posToPx(POS[idx], W, H);
     const g = svg.append('g').attr('class', 'node')
-      .attr('id', 'node-group-' + svgId + '-' + idx)
-      .attr('data-idx', idx)
-      .attr('data-svg', svgId)
-      .attr('transform', `translate(${x},${y})`)
-      .call(dragNodo);
+            .attr('id', 'node-group-' + svgId + '-' + idx)
+            .attr('data-idx', idx)
+            .attr('data-svg', svgId)
+            .attr('transform', `translate(${x},${y})`)
+            .style('cursor', svgId === 'grafoSvg' ? 'pointer' : 'grab');
 
-    g.append('circle').attr('r', 24)
-      .attr('fill', COLORES_NODO[idx % COLORES_NODO.length])
-      .attr('stroke', '#0d1117').attr('id', 'node-' + svgId + '-' + idx)
-      .on('click', () => clickNodo(idx));
+    if (svgId === 'grafoSvg') {
+      // En la pantalla de Juego, el nodo se selecciona con un solo click.
+      // Usamos pointerdown para que D3 drag no interfiera con el click.
+      g.on('pointerdown', (evt) => {
+        evt.preventDefault();
+        evt.stopPropagation();
+        clickNodo(idx);
+      });
+    } else {
+      // En la pestaña Grafo, los nodos siguen siendo arrastrables.
+      g.call(dragNodo);
+    }
+
+    g.append('circle')
+            .attr('r', 24)
+            .attr('fill', COLORES_NODO[idx % COLORES_NODO.length])
+            .attr('stroke', '#0d1117')
+            .attr('id', 'node-' + svgId + '-' + idx);
 
     g.on('mouseenter', (evt) => mostrarTooltipSede(evt, idx))
-      .on('mousemove', moverTooltipSede)
-      .on('mouseleave', ocultarTooltipSede);
+            .on('mousemove', moverTooltipSede)
+            .on('mouseleave', ocultarTooltipSede);
 
-    g.append('text').attr('dy', '0.35em').attr('font-size', '10px')
-      .text(nombre.slice(0, 3));
-    g.append('text').attr('dy', '2.1em').attr('font-size', '9px').attr('fill', 'var(--muted)')
-      .text(idx);
+    g.append('text')
+            .attr('dy', '0.35em')
+            .attr('font-size', '10px')
+            .style('pointer-events', 'none')
+            .text(nombre.slice(0, 3));
+
+    g.append('text')
+            .attr('dy', '2.1em')
+            .attr('font-size', '9px')
+            .attr('fill', 'var(--muted)')
+            .style('pointer-events', 'none')
+            .text(idx);
   });
 }
 
@@ -730,23 +736,37 @@ function clickNodo(idx) {
 
 function actualizarCaminoUI() {
   actualizarCaminoVisual();
+
   const preview = document.getElementById('caminoPreview');
   if (preview) {
     preview.textContent = caminoSeleccionado.length
-      ? caminoSeleccionado.map(i => `${i}(${NODOS[i]})`).join(' → ')
-      : '— ninguno —';
+            ? caminoSeleccionado.map(i => `${i}(${NODOS[i]})`).join(' → ')
+            : '— ninguno —';
   }
+
   const vacio = caminoSeleccionado.length === 0;
   const unido = !!me;
+  const miDato = S.ranking?.find(r => r.nombre === me);
+  const yaRespondi = !!miDato?.respondio;
+
   const btnEnviar = document.getElementById('btnEnviar');
   const btnDeshacer = document.getElementById('btnDeshacer');
   const aviso = document.getElementById('avisoUnirse');
+
   if (btnEnviar) {
-    btnEnviar.disabled = vacio || !unido;
-    btnEnviar.title = unido ? 'Enviar tu camino al servidor' : 'Primero unite con tu nombre';
+    btnEnviar.disabled = vacio || !unido || yaRespondi || !S.pregunta?.activa;
+    btnEnviar.title = yaRespondi
+            ? 'Ya respondiste esta pregunta'
+            : (unido ? 'Enviar tu camino al servidor' : 'Primero unite con tu nombre');
   }
-  if (btnDeshacer) btnDeshacer.disabled = vacio || !unido;
-  if (aviso) aviso.style.display = unido ? 'none' : '';
+
+  if (btnDeshacer) {
+    btnDeshacer.disabled = vacio || !unido || yaRespondi || !S.pregunta?.activa;
+  }
+
+  if (aviso) {
+    aviso.style.display = unido ? 'none' : '';
+  }
 }
 
 function deshacerUltimoNodo() {
@@ -840,110 +860,6 @@ function dfsLocal(origen) {
 
 function sleep(ms) { return new Promise(r => setTimeout(r, ms)); }
 
-// ─── DIJKSTRA LOCAL ───────────────────────────────────────────
-function dijkstraLocal(origen, destino) {
-  const n = NODOS.length;
-  const dist = new Array(n).fill(Infinity);
-  const padre = new Array(n).fill(-1);
-  const visto = new Array(n).fill(false);
-  const orden = []; // orden de finalización (para animación)
-  dist[origen] = 0;
-  for (let iter = 0; iter < n; iter++) {
-    let u = -1;
-    for (let i = 0; i < n; i++)
-      if (!visto[i] && dist[i] !== Infinity && (u === -1 || dist[i] < dist[u])) u = i;
-    if (u === -1) break;
-    visto[u] = true;
-    orden.push(u);
-    if (u === destino) break;
-    for (let v = 0; v < n; v++) {
-      if (MATRIZ[u][v] !== 0 && !visto[v]) {
-        const nd = dist[u] + MATRIZ[u][v];
-        if (nd < dist[v]) { dist[v] = nd; padre[v] = u; }
-      }
-    }
-  }
-  const camino = [];
-  if (padre[destino] === -1 && destino !== origen) return { camino, costo: Infinity, orden };
-  for (let x = destino; x !== -1; x = padre[x]) camino.unshift(x);
-  return { camino, costo: dist[destino], orden };
-}
-
-async function animarDijkstra() {
-  if (simulacionActiva) return;
-  simulacionActiva = true;
-  const origen  = parseInt(document.getElementById('dijkOrigen').value);
-  const destino = parseInt(document.getElementById('dijkDestino').value);
-  if (origen === destino) { simulacionActiva = false; return; }
-
-  const { camino, costo, orden } = dijkstraLocal(origen, destino);
-  const svgId = 'grafoSvg2';
-  const info = document.getElementById('ordenVisita');
-
-  // Reset colores
-  NODOS.forEach((_, i) => {
-    const el = document.getElementById(`node-${svgId}-${i}`);
-    if (el) el.style.fill = COLORES_NODO[i % COLORES_NODO.length];
-  });
-
-  info.textContent = `Dijkstra explorando desde ${NODOS[origen]}...`;
-
-  // Animar orden de exploración (naranja)
-  for (const u of orden) {
-    const el = document.getElementById(`node-${svgId}-${u}`);
-    if (el) { el.style.fill = 'var(--orange)'; }
-    await sleep(500);
-  }
-
-  // Resaltar camino final (azul)
-  for (const u of camino) {
-    const el = document.getElementById(`node-${svgId}-${u}`);
-    if (el) el.style.fill = 'var(--accent)';
-  }
-  // Marcar inicio y fin
-  const startEl = document.getElementById(`node-${svgId}-${origen}`);
-  const endEl   = document.getElementById(`node-${svgId}-${destino}`);
-  if (startEl) startEl.style.fill = 'var(--green)';
-  if (endEl)   endEl.style.fill   = 'var(--red)';
-
-  if (camino.length)
-    info.textContent = `Dijkstra: ${camino.map(i => NODOS[i]).join(' → ')} | Costo total: ${costo}`;
-  else
-    info.textContent = `Dijkstra: no hay camino de ${NODOS[origen]} a ${NODOS[destino]}`;
-
-  simulacionActiva = false;
-}
-
-// ─── MATRIZ QUERY ANSWER ──────────────────────────────────────
-function togglePesoInput() {
-  const conectado = document.querySelector('input[name="mqConectado"]:checked')?.value;
-  document.getElementById('mqPesoContainer').style.display = conectado === '1' ? '' : 'none';
-  const btnM = document.getElementById('btnEnviarMatriz');
-  if (btnM) btnM.disabled = !me;
-}
-
-async function enviarMatrizQuery() {
-  if (!me) { alert('Primero unite al juego con tu nombre.'); return; }
-  const conectado = document.querySelector('input[name="mqConectado"]:checked')?.value;
-  if (!conectado) { alert('Seleccioná si están conectados o no.'); return; }
-  let caminoStr;
-  if (conectado === '1') {
-    const peso = document.getElementById('mqPeso').value.trim();
-    if (!peso || isNaN(+peso) || +peso <= 0) { alert('Ingresá el peso de la arista.'); return; }
-    caminoStr = `1,${peso}`;
-  } else {
-    caminoStr = '0';
-  }
-  const r = await api('/api/responder', { nombre: me, camino: caminoStr });
-  if (r.error) { alert(r.error); return; }
-  const msg = r.correcta
-    ? `✅ ¡Correcto! +${r.puntos} puntos (${(r.tiempoMs/1000).toFixed(1)}s)`
-    : `❌ Incorrecto. +${r.puntos} pts parciales`;
-  const btn = document.getElementById('btnEnviarMatriz');
-  if (btn) { btn.textContent = msg; btn.disabled = true; }
-  await load();
-}
-
 // ─── MATRIZ ───────────────────────────────────────────────────
 function renderMatriz() {
   if (!NODOS.length || !MATRIZ.length) return;
@@ -1028,7 +944,23 @@ async function enviarRespuesta() {
   }
   if (caminoSeleccionado.length === 0) return;
   const r = await api('/api/responder', {nombre: me, camino: caminoSeleccionado.join(',')});
-  if (r.error) { alert(r.error); return; }
+
+  if (r.error) {
+    if (r.error === 'Jugador no registrado') {
+      const nombreGuardado = me;
+      me = null;
+      localStorage.removeItem('grafogame_nombre');
+
+      const input = document.getElementById('inputNombre');
+      if (input) input.value = nombreGuardado || '';
+
+      document.getElementById('panelUnirse').style.display = '';
+    }
+
+    alert(r.error);
+    await load();
+    return;
+  }
   const msg = r.correcta
     ? `✅ ¡Correcto! +${r.puntos} puntos (${(r.tiempoMs/1000).toFixed(1)}s)`
     : `❌ Incorrecto. +${r.puntos} pts parciales`;
@@ -1140,24 +1072,19 @@ async function editarArista() {
 async function mostrarSolucion() {
   const r = await api('/api/resolver');
   if (r.error) { alert(r.error); return; }
+  // r.respuesta ya es un array (el server lo serializa como JSON array,
+  // no como string). No hace falta JSON.parse.
   const nums = Array.isArray(r.respuesta) ? r.respuesta : [];
   if (r.tipo === 'MATRIZ_QUERY') {
+    // Para preguntas de matriz, la respuesta es [conectado(0/1), peso?]
     const conectado = nums[0] === 1;
-    alert('Solución (MATRIZ_QUERY):\n' + (conectado
+    alert('Solución (MATRIZ_QUERY):\\n' + (conectado
       ? '✅ Conectados con peso ' + nums[1]
       : '❌ No están conectados'));
     return;
   }
-  if (r.tipo === 'DIJKSTRA_CAMINO') {
-    let costo = 0;
-    for (let i = 0; i < nums.length - 1; i++) costo += MATRIZ[nums[i]][nums[i+1]];
-    alert('Solución (DIJKSTRA):\n' + nums.map(i => i + '(' + NODOS[i] + ')').join(' → ')
-      + '\nCosto total: ' + costo
-      + '\n\nNota: se acepta cualquier camino con el mismo costo mínimo.');
-    await animarOrden(nums, 'bfs', 'grafoSvg2'); // animar en naranja/azul
-    return;
-  }
-  alert('Solución (' + r.tipo + '):\n' + nums.map(i => i + '(' + NODOS[i] + ')').join(' → '));
+  alert('Solución (' + r.tipo + '):\\n' + nums.map(i => i + '(' + NODOS[i] + ')').join(' → '));
+  // animar en el grafo
   if (r.tipo === 'BFS_CAMINO' || r.tipo === 'BFS_ORDEN') {
     await animarOrden(nums, 'bfs', 'grafoSvg2');
   } else if (r.tipo === 'DFS_ORDEN') {
@@ -1179,16 +1106,12 @@ async function reiniciar() {
 // ─── SELECTORES ───────────────────────────────────────────────
 function poblarSelectores() {
   if (!NODOS.length) return;
-  const ids = ['bfsOrigen','dfsOrigen','dijkOrigen','dijkDestino','nuevoOrigen','nuevoDestino','qU','qV','aristU','aristV'];
+  const ids = ['bfsOrigen','dfsOrigen','nuevoOrigen','nuevoDestino','qU','qV','aristU','aristV'];
   ids.forEach(id => {
     const el = document.getElementById(id);
     if (!el || el.options.length === NODOS.length) return;
     el.innerHTML = NODOS.map((n,i) => `<option value="${i}">${i} — ${n}</option>`).join('');
   });
-  // Destino Dijkstra default distinto al origen
-  const dDest = document.getElementById('dijkDestino');
-  if (dDest && dDest.options.length > 1 && dDest.value === document.getElementById('dijkOrigen')?.value)
-    dDest.selectedIndex = 4;
 }
 
 // ─── TABS ─────────────────────────────────────────────────────
